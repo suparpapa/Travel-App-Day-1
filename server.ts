@@ -3,6 +3,9 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { GoogleGenAI } from '@google/genai';
+import healthHandler from './api/health.ts';
+import revgeocodeHandler from './api/revgeocode.ts';
+import ltaHandler from './api/lta.ts';
 
 dotenv.config();
 
@@ -187,7 +190,13 @@ Return JSON format:
   });
 });
 
-// 3. Mount Vite Middleware or Serve Production Build
+// 3. Mount Serverless /api Routes
+app.all('/api/health', (req, res) => healthHandler(req, res));
+app.all('/api/revgeocode', (req, res) => revgeocodeHandler(req, res));
+app.all('/api/onemap/revgeocode', (req, res) => revgeocodeHandler(req, res));
+app.all('/api/lta', (req, res) => ltaHandler(req, res));
+
+// 4. Mount Vite Middleware or Serve Production Build
 async function startServer() {
   if (process.env.NODE_ENV !== 'production') {
     const { createServer: createViteServer } = await import('vite');
