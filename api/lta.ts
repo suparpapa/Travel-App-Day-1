@@ -1,11 +1,11 @@
-import type { Request, Response } from 'express';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 /**
  * Serverless Handler for Singapore LTA DataMall
  * Base URL: https://datamall2.mytransport.sg/ltaodataservice
  * Header: AccountKey: <LTA_DATAMALL_KEY>
  */
-export default async function handler(req: Request, res: Response) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed. Use GET.' });
   }
@@ -17,6 +17,11 @@ export default async function handler(req: Request, res: Response) {
     skip,
   } = req.query;
 
+  const endpointParam = Array.isArray(endpoint) ? endpoint[0] : endpoint;
+  const busStopCodeParam = Array.isArray(busStopCode) ? busStopCode[0] : busStopCode;
+  const serviceNoParam = Array.isArray(serviceNo) ? serviceNo[0] : serviceNo;
+  const skipParam = Array.isArray(skip) ? skip[0] : skip;
+
   const accountKey =
     process.env.LTA_DATAMALL_KEY ||
     process.env.LTA_API_KEY ||
@@ -26,7 +31,7 @@ export default async function handler(req: Request, res: Response) {
   if (!accountKey) {
     return res.status(401).json({
       error: 'LTA_DATAMALL_KEY is not configured',
-      message: 'Please set the LTA_DATAMALL_KEY environment variable to pull live transport data.',
+      message: 'Please set the LTA_DATAMALL_KEY environment variable in Vercel project settings to pull live transport data.',
       availableEndpoints: [
         'BusArrival (requires busStopCode, optional serviceNo)',
         'BusStops (optional skip)',
@@ -38,21 +43,21 @@ export default async function handler(req: Request, res: Response) {
   }
 
   try {
-    let targetPath = String(endpoint);
+    let targetPath = String(endpointParam);
     const queryParams = new URLSearchParams();
 
-    if (endpoint === 'BusArrival') {
+    if (endpointParam === 'BusArrival') {
       targetPath = 'v3/BusArrival';
-      if (busStopCode) queryParams.set('BusStopCode', String(busStopCode));
-      if (serviceNo) queryParams.set('ServiceNo', String(serviceNo));
-    } else if (endpoint === 'BusStops') {
+      if (busStopCodeParam) queryParams.set('BusStopCode', String(busStopCodeParam));
+      if (serviceNoParam) queryParams.set('ServiceNo', String(serviceNoParam));
+    } else if (endpointParam === 'BusStops') {
       targetPath = 'BusStops';
-      if (skip) queryParams.set('$skip', String(skip));
-    } else if (endpoint === 'TrainAlerts' || endpoint === 'TrainServiceAlerts') {
+      if (skipParam) queryParams.set('$skip', String(skipParam));
+    } else if (endpointParam === 'TrainAlerts' || endpointParam === 'TrainServiceAlerts') {
       targetPath = 'TrainServiceAlerts';
-    } else if (endpoint === 'TrafficIncidents') {
+    } else if (endpointParam === 'TrafficIncidents') {
       targetPath = 'TrafficIncidents';
-    } else if (endpoint === 'TaxiAvailability') {
+    } else if (endpointParam === 'TaxiAvailability') {
       targetPath = 'TaxiAvailability';
     }
 
